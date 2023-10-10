@@ -5,7 +5,8 @@
 This script will build the specified PostgreSQL version for the target triple and package it
  into the tarball. A minimum set of options is selected: openssl and libedit.
 
- No dependencies are required; the script will download and build them automatically.
+No existing dependencies are required; the script will download and build them automatically. All dependencies are linked
+ statically. Executables are created with $ORIGIN/../lib rpath.
 
 ## Usage
 
