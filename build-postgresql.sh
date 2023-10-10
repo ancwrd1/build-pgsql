@@ -112,7 +112,15 @@ build_openssl() {
 	else
 		cross=--cross-compile-prefix=
 	fi
-	./Configure --prefix=/usr "$cross" --libdir=lib no-shared linux-$arch >>"$log" 2>>"$log"
+	case $arch in
+		s390x)
+			target=linux64-$arch
+			;;
+		*)
+			target=linux-$arch
+			;;
+	esac
+	./Configure --prefix=/usr "$cross" --libdir=lib no-shared $target >>"$log" 2>>"$log"
 	if ! make -j8 >>"$log" 2>>"$log"; then
 		echo "Build failed!"
 		exit 1
