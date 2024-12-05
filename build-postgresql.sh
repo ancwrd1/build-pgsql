@@ -29,8 +29,9 @@ esac
 
 basedir=$(dirname $(readlink -f $0))
 
-openssl_tar="openssl-1.1.1w.tar.gz"
-libedit_tar="libedit-20230828-3.1.tar.gz"
+openssl_version="3.4.0"
+openssl_tar="openssl-$openssl_version.tar.gz"
+libedit_tar="libedit-20240808-3.1.tar.gz"
 postgresql_tar="postgresql-$version.tar.bz2"
 ncurses_tar="ncurses.tar.gz"
 
@@ -50,52 +51,33 @@ mkdir -p "$build"
 cache="$basedir/cache"
 mkdir -p "$cache"
 
-download_postgres() {
-	if [ -f "$cache/$postgresql_tar" ]; then
-		echo "Found postgresql in the cache"
+# $1=archive, $2=url
+download() {
+	if [ -f "$cache/$1" ]; then
+		echo "Found $1 in the cache"
 	else
-		echo "Downloading postgresql: $postgresql_tar"
-		if ! curl --output-dir "$cache" -O "https://ftp.postgresql.org/pub/source/v${version}/$postgresql_tar" >/dev/null 2>/dev/null; then
-			echo "Unable to download postgresql!"
+		echo "Downloading $1"
+		if ! curl -L --output-dir "$cache" -O "$2"; then
+			echo "Unable to download $1!"
 			exit 1
 		fi
 	fi
+}
+
+download_postgresql() {
+	download $postgresql_tar "https://ftp.postgresql.org/pub/source/v${version}/$postgresql_tar"
 }
 
 download_openssl() {
-	if [ -f "$cache/$openssl_tar" ]; then
-		echo "Found openssl in the cache"
-	else
-		echo "Downloading openssl: $openssl_tar"
-		if ! curl --output-dir "$cache" -O "https://www.openssl.org/source/$openssl_tar"; then
-			echo "Unable to download openssl!"
-			exit 1
-		fi
-	fi
+	download "$openssl_tar" "https://github.com/openssl/openssl/releases/download/openssl-$openssl_version/$openssl_tar"
 }
 
 download_libedit() {
-	if [ -f "$cache/$libedit_tar" ]; then
-		echo "Found libedit in the cache"
-	else
-		echo "Downloading libedit: $libedit_tar"
-		if ! curl --output-dir "$cache" -O "https://thrysoee.dk/editline/$libedit_tar" >/dev/null 2>/dev/null; then
-			echo "Unable to download libedit!"
-			exit 1
-		fi
-	fi
+	download $libedit_tar "https://thrysoee.dk/editline/$libedit_tar"
 }
 
 download_ncurses() {
-	if [ -f "$cache/$ncurses_tar" ]; then
-		echo "Found ncurses in the cache"
-	else
-		echo "Downloading ncurses: $ncurses_tar"
-		if ! curl --output-dir "$cache" -O "https://invisible-island.net/datafiles/release/$ncurses_tar" >/dev/null 2>/dev/null; then
-			echo "Unable to download ncurses!"
-			exit 1
-		fi
-	fi
+	download $ncurses_tar "https://invisible-island.net/datafiles/release/$ncurses_tar"
 }
 
 build_openssl() {
@@ -120,7 +102,7 @@ build_openssl() {
 			target=linux-$arch
 			;;
 	esac
-	./Configure --prefix=/usr "$cross" --libdir=lib no-shared $target >>"$log" 2>>"$log"
+	./Configure --prefix=/usr "$cross" --libdir=lib no-shared no-threads $target >>"$log" 2>>"$log"
 	if ! make -j8 >>"$log" 2>>"$log"; then
 		echo "Build failed!"
 		exit 1
@@ -172,7 +154,7 @@ build_libedit() {
 		echo "Configure failed!"
 		exit 1
 	fi
-	
+
 	if ! make -j8 >>$log 2>>$log; then
 		echo "Build failed!"
 		exit 1
@@ -222,7 +204,7 @@ build_postgresql() {
 	export LDFLAGS="-L$deps/usr/lib -Wl,-rpath=\\$\$ORIGIN/../lib"
 	export LDFLAGS_EX="$LDFLAGS"
 	export CFLAGS="-I$deps/usr/include"
-	
+
 	if ! ./configure --host=$triple --libdir=/usr/lib --prefix=/usr --with-openssl --without-zlib --without-icu >>"$log" 2>>"$log"; then
 		echo "Configure failed!"
 		exit 1
@@ -245,12 +227,13 @@ package_postgresql() {
 	cd "$dist"
 	mv usr pgsql
 	rm -rf pgsql/include
-	$triple-strip pgsql/bin/*
-	find pgsql -name \*.so\* -exec $triple-strip {} \;
+	strip pgsql/bin/*
+	find pgsql -name \*.so\* -exec strip {} \;
 	find pgsql -name \*.a -exec rm -f {} \;
 	tar cJf pgsql-$version-linux-$arch.tar.xz pgsql
 }
 
 check_build_deps
+download_postgresql
 build_postgresql
 package_postgresql
