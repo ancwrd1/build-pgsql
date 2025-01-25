@@ -27,7 +27,7 @@ Examples:
 ```bash
 ./build-postgresql.sh aarch64-unknown-linux-gnu 17.2
 ./build-postgresql.sh x86_64-unknown-linux-gnu 17.2
-CC="zig cc --target=x86_64-linux-gnu.2.17" ./build-postgresql.sh x86_64-unknown-linux-gnu 17.2
+CC="zig cc --target=x86_64-linux-gnu.2.18" ./build-postgresql.sh x86_64-unknown-linux-gnu 17.2
 ```
 
 ## Packaging
