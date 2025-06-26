@@ -29,9 +29,9 @@ esac
 
 basedir=$(dirname $(readlink -f $0))
 
-openssl_version="3.4.0"
+openssl_version="3.5.0"
 openssl_tar="openssl-$openssl_version.tar.gz"
-libedit_tar="libedit-20240808-3.1.tar.gz"
+libedit_tar="libedit-20250104-3.1.tar.gz"
 postgresql_tar="postgresql-$version.tar.bz2"
 ncurses_tar="ncurses.tar.gz"
 
