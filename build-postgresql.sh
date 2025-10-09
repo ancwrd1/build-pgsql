@@ -7,6 +7,7 @@ fi
 
 triple=$1
 version=$2
+numcpus=$(nproc --all)
 
 case $triple in
 	x86_64-*linux*)
@@ -103,11 +104,11 @@ build_openssl() {
 			;;
 	esac
 	./Configure --prefix=/usr "$cross" --libdir=lib no-shared no-threads $target >>"$log" 2>>"$log"
-	if ! make -j8 >>"$log" 2>>"$log"; then
+	if ! make -j$numcpus >>"$log" 2>>"$log"; then
 		echo "Build failed!"
 		exit 1
 	fi
-	if ! make DESTDIR="$deps" install >>"$log" 2>>"$log"; then
+	if ! make DESTDIR="$deps" install_sw >>"$log" 2>>"$log"; then
 		echo "Install failed!"
 		exit 1
 	fi
@@ -128,7 +129,7 @@ build_ncurses() {
 		exit 1
 	fi
 
-	if ! make -j8 >>$log 2>>$log; then
+	if ! make -j$numcpus >>$log 2>>$log; then
 		echo "Build failed!"
 		exit 1
 	fi
@@ -155,7 +156,7 @@ build_libedit() {
 		exit 1
 	fi
 
-	if ! make -j8 >>$log 2>>$log; then
+	if ! make -j$numcpus >>$log 2>>$log; then
 		echo "Build failed!"
 		exit 1
 	fi
@@ -210,7 +211,7 @@ build_postgresql() {
 		exit 1
 	fi
 
-	if ! make -j8 >>$log 2>>$log; then
+	if ! make -j$numcpus >>$log 2>>$log; then
 		echo "Build failed!"
 		exit 1
 	fi
