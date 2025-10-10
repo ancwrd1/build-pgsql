@@ -52,14 +52,18 @@ mkdir -p "$build"
 cache="$basedir/cache"
 mkdir -p "$cache"
 
+log_with_time() {
+	echo "[$(date +%H:%M:%S.%03N)] $1"
+}
+
 # $1=archive, $2=url
 download() {
 	if [ -f "$cache/$1" ]; then
-		echo "Found $1 in the cache"
+		log_with_time "Found $1 in the cache"
 	else
-		echo "Downloading $1"
-		if ! curl -L --output-dir "$cache" -O "$2"; then
-			echo "Unable to download $1!"
+		log_with_time "Downloading $1"
+		if ! curl -L --output-dir "$cache" -O "$2" 2>/dev/null; then
+			log_with_time "Unable to download $1!"
 			exit 1
 		fi
 	fi
@@ -84,7 +88,7 @@ download_ncurses() {
 build_openssl() {
 	log="$build/openssl.log"
 	rm -f "$log"
-	echo "Building openssl"
+	log_with_time "Building openssl"
 	cd "$build"
 	rm -rf openssl
 	mkdir -p openssl
@@ -105,11 +109,11 @@ build_openssl() {
 	esac
 	./Configure --prefix=/usr "$cross" --libdir=lib no-shared no-threads $target >>"$log" 2>>"$log"
 	if ! make -j$numcpus >>"$log" 2>>"$log"; then
-		echo "Build failed!"
+		log_with_time "Build failed!"
 		exit 1
 	fi
 	if ! make DESTDIR="$deps" install_sw >>"$log" 2>>"$log"; then
-		echo "Install failed!"
+		log_with_time "Install failed!"
 		exit 1
 	fi
 }
@@ -117,7 +121,7 @@ build_openssl() {
 build_ncurses() {
 	log="$build/ncurses.log"
 	rm -f "$log"
-	echo "Building ncurses"
+	log_with_time "Building ncurses"
 	cd "$build"
 	rm -rf ncurses
 	mkdir -p ncurses
@@ -125,17 +129,17 @@ build_ncurses() {
 	cd ncurses
 
 	if ! ./configure --without-tests --with-install-prefix="$deps" --libdir=/usr/lib --prefix=/usr --host=$triple --disable-shared --disable-stripping --with-terminfo-dirs=/etc/terminfo:/lib/terminfo:/usr/share/terminfo >>$log 2>>$log; then
-		echo "Configure failed!"
+		log_with_time "Configure failed!"
 		exit 1
 	fi
 
 	if ! make -j$numcpus >>$log 2>>$log; then
-		echo "Build failed!"
+		log_with_time "Build failed!"
 		exit 1
 	fi
 
 	if ! make install >>"$log" 2>>"$log"; then
-		echo "Install failed!"
+		log_with_time "Install failed!"
 		exit 1
 	fi
 }
@@ -143,7 +147,7 @@ build_ncurses() {
 build_libedit() {
 	log="$build/libedit.log"
 	rm -f "$log"
-	echo "Building libedit"
+	log_with_time "Building libedit"
 	cd "$build"
 	rm -rf libedit
 	mkdir -p libedit
@@ -152,40 +156,40 @@ build_libedit() {
 
 	LDFLAGS="-L$deps/usr/lib" CFLAGS="-I$deps/usr/include" ./configure  --libdir=/usr/lib --prefix=/usr --host=$triple --disable-shared >>"$log" 2>>"$log"
 	if [ "$?" != "0" ]; then
-		echo "Configure failed!"
+		log_with_time "Configure failed!"
 		exit 1
 	fi
 
 	if ! make -j$numcpus >>$log 2>>$log; then
-		echo "Build failed!"
+		log_with_time "Build failed!"
 		exit 1
 	fi
 
 	if ! make DESTDIR="$deps" install >>"$log" 2>>"$log"; then
-		echo "Install failed!"
+		log_with_time "Install failed!"
 		exit 1
 	fi
 }
 
 check_build_deps() {
-	echo "Checking and building dependencies"
+	log_with_time "Checking and building dependencies"
 
 	if [ -f "$deps/usr/lib/libcrypto.a" ]; then
-		echo "Using existing openssl"
+		log_with_time "Using existing openssl"
 	else
 		download_openssl
 		build_openssl
 	fi
 
 	if [ -f "$deps/usr/lib/libcurses.a" ]; then
-		echo "Using existing ncurses"
+		log_with_time "Using existing ncurses"
 	else
 		download_ncurses
 		build_ncurses
 	fi
 
 	if [ -f "$deps/usr/lib/libedit.a" ]; then
-		echo "Using existing libedit"
+		log_with_time "Using existing libedit"
 	else
 		download_libedit
 		build_libedit
@@ -195,7 +199,7 @@ check_build_deps() {
 build_postgresql() {
 	log="$build/postgresql.log"
 	rm -f "$log"
-	echo "Building postgresql"
+	log_with_time "Building postgresql"
 	cd "$build"
 	rm -rf postgresql
 	mkdir -p postgresql
@@ -207,31 +211,31 @@ build_postgresql() {
 	export CFLAGS="-I$deps/usr/include"
 
 	if ! ./configure --host=$triple --libdir=/usr/lib --prefix=/usr --with-openssl --without-zlib --without-icu >>"$log" 2>>"$log"; then
-		echo "Configure failed!"
+		log_with_time "Configure failed!"
 		exit 1
 	fi
 
 	if ! make -j$numcpus >>$log 2>>$log; then
-		echo "Build failed!"
+		log_with_time "Build failed!"
 		exit 1
 	fi
 
 	rm -rf "$dist"
 	if ! make DESTDIR="$dist" install >>"$log" 2>>"$log"; then
-		echo "Install failed!"
+		log_with_time "Install failed!"
 		exit 1
 	fi
 }
 
 package_postgresql() {
-	echo "Packaging postgresql"
+	log_with_time "Packaging postgresql"
 	cd "$dist"
 	mv usr pgsql
 	rm -rf pgsql/include
 	strip pgsql/bin/*
 	find pgsql -name \*.so\* -exec strip {} \;
 	find pgsql -name \*.a -exec rm -f {} \;
-	tar cJf pgsql-$version-linux-$arch.tar.xz pgsql
+	tar c pgsql | xz -z -9 >pgsql-$version-linux-$arch.tar.xz
 }
 
 check_build_deps
