@@ -206,9 +206,9 @@ build_postgresql() {
 	tar xf "$cache/$postgresql_tar" -C postgresql --strip-components 1
 	cd postgresql
 
-	export LDFLAGS="-L$deps/usr/lib -Wl,-rpath=\\$\$ORIGIN/../lib -flto"
+	export LDFLAGS="-L$deps/usr/lib -Wl,-rpath=\\$\$ORIGIN/../lib"
 	export LDFLAGS_EX="$LDFLAGS"
-	export CFLAGS="-I$deps/usr/include -flto"
+	export CFLAGS="-I$deps/usr/include"
 
 	if ! ./configure --host=$triple --libdir=/usr/lib --prefix=/usr --with-openssl --without-zlib --without-icu >>"$log" 2>>"$log"; then
 		log_with_time "Configure failed!"
