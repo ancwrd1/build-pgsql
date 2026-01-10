@@ -130,7 +130,7 @@ build_ncurses() {
     cd ncurses
 
     log_with_time "Configuring ncurses"
-    if ! ./configure --without-tests --with-install-prefix="$deps" --libdir=/usr/lib --prefix=/usr --host=$triple --disable-shared --disable-stripping --with-terminfo-dirs=/etc/terminfo:/lib/terminfo:/usr/share/terminfo >>$log 2>>$log; then
+    if ! ./configure --without-tests --with-install-prefix="$deps" --libdir=/usr/lib --prefix=/usr --host=$triple --disable-widec --disable-shared --disable-stripping --with-terminfo-dirs=/etc/terminfo:/lib/terminfo:/usr/share/terminfo >>$log 2>>$log; then
         log_with_time "Configure failed!"
         exit 1
     fi
