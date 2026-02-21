@@ -1,13 +1,14 @@
 #!/bin/bash
 
 if [ "$1" == "" -o "$2" == "" ]; then
-    echo "usage: $0 triple version"
+    echo "usage: $0 <triple>|host version"
     exit 1
 fi
 
 triple=$1
 version=$2
 numcpus=$(nproc --all)
+host="--host=$triple"
 
 case $triple in
     x86_64-*linux*)
@@ -22,6 +23,10 @@ case $triple in
     arm-*linux*)
         arch=armv7l
         ;;
+    host)
+        arch=$(uname -m)
+        host=""
+        ;;
     *)
         echo "unsupported target"
         exit 1
@@ -30,7 +35,7 @@ esac
 
 basedir=$(dirname $(readlink -f $0))
 
-openssl_version="3.6.0"
+openssl_version="3.6.1"
 openssl_tar="openssl-$openssl_version.tar.gz"
 libedit_tar="libedit-20251016-3.1.tar.gz"
 postgresql_tar="postgresql-$version.tar.bz2"
@@ -41,11 +46,11 @@ deps="$basedir/deps/$triple"
 mkdir -p "$deps"
 
 # postgres dist
-dist="$basedir/dist/$triple"
+dist="$basedir/dist/$triple/$version"
 mkdir -p "$dist"
 
 # build
-build="$basedir/build/$triple"
+build="$basedir/build/$triple/$version"
 mkdir -p "$build"
 
 # cache for tarballs
@@ -93,7 +98,9 @@ build_openssl() {
     mkdir -p openssl
     tar xf "$cache/$openssl_tar" -C openssl --strip-components 1
     cd openssl
-    if [ -z "$CC" ]; then
+    if [ "$triple" == "host" ]; then
+        cross=""
+    elif [ -z "$CC" ]; then
         cross=--cross-compile-prefix="$triple-"
     else
         cross=--cross-compile-prefix=
@@ -130,7 +137,7 @@ build_ncurses() {
     cd ncurses
 
     log_with_time "Configuring ncurses"
-    if ! ./configure --without-tests --with-install-prefix="$deps" --libdir=/usr/lib --prefix=/usr --host=$triple --disable-widec --disable-shared --disable-stripping --with-terminfo-dirs=/etc/terminfo:/lib/terminfo:/usr/share/terminfo >>$log 2>>$log; then
+    if ! ./configure --without-tests --with-install-prefix="$deps" --libdir=/usr/lib --prefix=/usr "$host" --disable-widec --disable-shared --disable-stripping --with-terminfo-dirs=/etc/terminfo:/lib/terminfo:/usr/share/terminfo >>$log 2>>$log; then
         log_with_time "Configure failed!"
         exit 1
     fi
@@ -158,7 +165,7 @@ build_libedit() {
     cd libedit
 
     log_with_time "Configuring libedit"
-    LDFLAGS="-L$deps/usr/lib" CFLAGS="-I$deps/usr/include" ./configure  --libdir=/usr/lib --prefix=/usr --host=$triple --disable-shared >>"$log" 2>>"$log"
+    LDFLAGS="-L$deps/usr/lib" CFLAGS="-I$deps/usr/include" ./configure  --libdir=/usr/lib --prefix=/usr "$host" --disable-shared >>"$log" 2>>"$log"
     if [ "$?" != "0" ]; then
         log_with_time "Configure failed!"
         exit 1
@@ -212,22 +219,22 @@ build_postgresql() {
     cd postgresql
 
     export LDFLAGS="-L$deps/usr/lib -Wl,-rpath=\\$\$ORIGIN/../lib"
-    export LDFLAGS_EX="$LDFLAGS"
-    export CFLAGS="-I$deps/usr/include"
+    export LDFLAGS_EX="$LDFLAGS -flto"
+    export CFLAGS="-I$deps/usr/include -flto"
 
-    log_with_time "Configuring postgresql"
-    if ! ./configure --host=$triple --libdir=/usr/lib --prefix=/usr --with-openssl --without-zlib --without-icu >>"$log" 2>>"$log"; then
+    log_with_time "Configuring postgresql $version"
+    if ! ./configure "$host" --libdir=/usr/lib --prefix=/usr --with-openssl --without-zlib --without-icu >>"$log" 2>>"$log"; then
         log_with_time "Configure failed!"
         exit 1
     fi
 
-    log_with_time "Building postgresql"
+    log_with_time "Building postgresql $version"
     if ! make -j$numcpus >>$log 2>>$log; then
         log_with_time "Build failed!"
         exit 1
     fi
 
-    log_with_time "Installing postgresql"
+    log_with_time "Installing postgresql $version"
     rm -rf "$dist"
     if ! make DESTDIR="$dist" install >>"$log" 2>>"$log"; then
         log_with_time "Install failed!"
@@ -236,7 +243,7 @@ build_postgresql() {
 }
 
 package_postgresql() {
-    log_with_time "Packaging postgresql"
+    log_with_time "Packaging postgresql $version"
     cd "$dist"
     mv usr pgsql
     rm -rf pgsql/include

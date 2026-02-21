@@ -19,6 +19,8 @@ If you have a cross compiler installed for the target triple run the build-postg
 ./build-postgresql.sh <triple> <version>
 ```
 
+Where `triple` can be either a target triple or a "host" indicating the current build host.
+
 If `zig` compiler is installed it is also possible to use "zig cc" cross compiler to build for specific
  target and GLIBC version.
  
