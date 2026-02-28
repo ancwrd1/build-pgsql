@@ -219,8 +219,8 @@ build_postgresql() {
     cd postgresql
 
     export LDFLAGS="-L$deps/usr/lib -Wl,-rpath=\\$\$ORIGIN/../lib"
-    export LDFLAGS_EX="$LDFLAGS -flto"
-    export CFLAGS="-I$deps/usr/include -flto"
+    export LDFLAGS_EX="$LDFLAGS"
+    export CFLAGS="-I$deps/usr/include"
 
     log_with_time "Configuring postgresql $version"
     if ! ./configure "$host" --libdir=/usr/lib --prefix=/usr --with-openssl --without-zlib --without-icu >>"$log" 2>>"$log"; then
