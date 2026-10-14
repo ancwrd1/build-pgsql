@@ -35,7 +35,7 @@ esac
 
 basedir=$(dirname $(readlink -f $0))
 
-openssl_version="4.0.1"
+openssl_version="4.0.3"
 openssl_tar="openssl-$openssl_version.tar.gz"
 libedit_tar="libedit-20260512-3.1.tar.gz"
 postgresql_tar="postgresql-$version.tar.bz2"
@@ -165,7 +165,7 @@ build_libedit() {
     cd libedit
 
     log_with_time "Configuring libedit"
-    LDFLAGS="-L$deps/usr/lib" CFLAGS="-I$deps/usr/include" ./configure  --libdir=/usr/lib --prefix=/usr "$host" --disable-shared >>"$log" 2>>"$log"
+    LDFLAGS="$LDFLAGS -L$deps/usr/lib" CFLAGS="$CFLAGS -I$deps/usr/include" ./configure  --libdir=/usr/lib --prefix=/usr "$host" --disable-shared >>"$log" 2>>"$log"
     if [ "$?" != "0" ]; then
         log_with_time "Configure failed!"
         exit 1
@@ -218,9 +218,9 @@ build_postgresql() {
     tar xf "$cache/$postgresql_tar" -C postgresql --strip-components 1
     cd postgresql
 
-    export LDFLAGS="-L$deps/usr/lib -Wl,-rpath=\\$\$ORIGIN/../lib"
+    export LDFLAGS="$LDFLAGS -L$deps/usr/lib -Wl,-rpath=\\$\$ORIGIN/../lib -Wl,--gc-sections"
     export LDFLAGS_EX="$LDFLAGS"
-    export CFLAGS="-I$deps/usr/include"
+    export CFLAGS="$CFLAGS -I$deps/usr/include"
 
     log_with_time "Configuring postgresql $version"
     if ! ./configure "$host" --libdir=/usr/lib --prefix=/usr --with-openssl --without-zlib --without-icu >>"$log" 2>>"$log"; then

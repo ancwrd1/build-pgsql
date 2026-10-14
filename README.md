@@ -22,14 +22,14 @@ If you have a cross compiler installed for the target triple run the build-postg
 Where `triple` can be either a target triple or a "host" indicating the current build host.
 
 If `zig` compiler is installed it is also possible to use "zig cc" cross compiler to build for specific
- target and GLIBC version.
+target and GLIBC version. To reduce the executables size, pass `-fno-sanitize=all` option to the compiler.
  
 Examples:
 
 ```bash
-./build-postgresql.sh aarch64-unknown-linux-gnu 17.2
-./build-postgresql.sh x86_64-unknown-linux-gnu 17.2
-CC="zig cc --target=x86_64-linux-gnu.2.18" ./build-postgresql.sh x86_64-unknown-linux-gnu 17.2
+./build-postgresql.sh aarch64-unknown-linux-gnu 18.6
+./build-postgresql.sh x86_64-unknown-linux-gnu 18.6
+CFLAGS="-fno-sanitize=all" CC="zig cc --target=x86_64-linux-gnu.2.18" ./build-postgresql.sh x86_64-unknown-linux-gnu 18.6
 ```
 
 ## Packaging
