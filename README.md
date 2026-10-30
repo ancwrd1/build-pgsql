@@ -11,8 +11,6 @@ No existing dependencies are required; the script will download and build them a
 
 ## Usage
 
-### Host compilation
-
 If you have a cross compiler installed for the target triple run the build-postgresql.sh as follows:
 
 ```bash
@@ -27,9 +25,16 @@ target and GLIBC version. To reduce the executables size, pass `-fno-sanitize=al
 Examples:
 
 ```bash
+# Build for aarch64 target using cross compiler
 ./build-postgresql.sh aarch64-unknown-linux-gnu 18.6
+
+# Build for host target using the installed compiler
+./build-postgresql.sh host 18.6
+
+# Build for specific GLIBC version using "zig cc"
+CFLAGS="-fno-sanitize=all" \
+CC="zig cc --target=x86_64-linux-gnu.2.18" \
 ./build-postgresql.sh x86_64-unknown-linux-gnu 18.6
-CFLAGS="-fno-sanitize=all" CC="zig cc --target=x86_64-linux-gnu.2.18" ./build-postgresql.sh x86_64-unknown-linux-gnu 18.6
 ```
 
 ## Packaging
