@@ -218,7 +218,7 @@ build_postgresql() {
     tar xf "$cache/$postgresql_tar" -C postgresql --strip-components 1
     cd postgresql
 
-    export LDFLAGS="$LDFLAGS -L$deps/usr/lib -Wl,-rpath=\\$\$ORIGIN/../lib -Wl,--gc-sections"
+    export LDFLAGS="$LDFLAGS -L$deps/usr/lib -Wl,-rpath=\\$\$ORIGIN/../lib"
     export LDFLAGS_EX="$LDFLAGS"
     export CFLAGS="$CFLAGS -I$deps/usr/include"
 
